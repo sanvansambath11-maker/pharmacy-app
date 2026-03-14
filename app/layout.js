@@ -5,14 +5,20 @@ export const metadata = {
   title: 'Batto Pharmacy - Your Trusted Healthcare Partner',
   description: 'Quality medicines, expert pharmacist support, and fast delivery to your doorstep.',
   manifest: '/manifest.json',
-  themeColor: '#0d9488',
-  viewport: 'width=device-width, initial-scale=1, maximum-scale=1',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
     title: 'Batto Pharmacy',
   },
 };
+
+export const viewport = {
+  themeColor: '#0d9488',
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+};
+
 
 export default function RootLayout({ children }) {
   return (
