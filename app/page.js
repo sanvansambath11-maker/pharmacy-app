@@ -1219,7 +1219,14 @@ function CheckoutPage({ cartItems, onRemoveFromCart, navigate, onPlaceOrder, use
                     </div>
                   ))}</div>
                 )}
-                <button disabled={cartItems.length === 0} onClick={() => setStep(2)} className="w-full mt-6 py-4 bg-gradient-to-r from-teal-500 to-emerald-500 text-white rounded-2xl font-bold disabled:opacity-50 hover:shadow-lg transition-all">Continue to Delivery</button>
+                <button disabled={cartItems.length === 0} onClick={() => {
+                  if (!user) {
+                    toast('Please sign in to checkout', { description: 'You need an account to place an order securely.' });
+                    navigate('login');
+                  } else {
+                    setStep(2);
+                  }
+                }} className="w-full mt-6 py-4 bg-gradient-to-r from-teal-500 to-emerald-500 text-white rounded-2xl font-bold disabled:opacity-50 hover:shadow-lg transition-all">Continue to Delivery</button>
               </div>
             )}
 
