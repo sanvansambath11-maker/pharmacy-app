@@ -2039,14 +2039,20 @@ function WishlistPage({ wishlist, toggleWishlist, navigate, onAddToCart }) {
 // ============ ADMIN WEATHER WIDGET ============
 function AdminWeatherWidget() {
   const [weather, setWeather] = useState(null);
+  const [time, setTime] = useState(new Date());
   
   useEffect(() => {
-    // Phnom Penh coords
-    fetch('https://api.open-meteo.com/v1/forecast?latitude=11.5564&longitude=104.9282&current=temperature_2m,weather_code&timezone=auto')
+    // Update local time every minute
+    const timer = setInterval(() => setTime(new Date()), 60000);
+    
+    // Phnom Penh coords with more data
+    fetch('https://api.open-meteo.com/v1/forecast?latitude=11.5564&longitude=104.9282&current=temperature_2m,relative_humidity_2m,wind_speed_10m,weather_code&timezone=auto')
       .then(res => res.json())
       .then(data => {
         if(data && data.current) setWeather(data.current);
       }).catch(err => console.error("Weather fetch failed:", err));
+      
+    return () => clearInterval(timer);
   }, []);
 
   if (!weather) return null;
@@ -2056,13 +2062,31 @@ function AdminWeatherWidget() {
   const WeatherIcon = isRain ? CloudRain : isCloudy ? Cloud : Sun;
   
   return (
-    <div className="hidden sm:flex items-center gap-3 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl p-3 shadow-sm hover:shadow-md transition-all cursor-default min-w-[130px]">
-      <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${isRain ? 'bg-blue-50 text-blue-500 dark:bg-blue-900/30 dark:text-blue-400' : isCloudy ? 'bg-gray-50 text-gray-500 dark:bg-gray-800 dark:text-gray-400' : 'bg-amber-50 text-amber-500 dark:bg-amber-900/30 dark:text-amber-400'}`}>
-        <WeatherIcon className="w-5 h-5" />
-      </div>
-      <div>
-        <div className="text-sm font-bold text-gray-900 dark:text-white">{Math.round(weather.temperature_2m)}°C</div>
-        <div className="text-xs text-gray-500">{isRain ? 'Rainy' : isCloudy ? 'Cloudy' : 'Clear'}</div>
+    <div className="hidden md:flex flex-col justify-center bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl px-6 py-3.5 shadow-sm hover:shadow-lg transition-all cursor-default min-w-[320px]">
+      <div className="flex items-center justify-between gap-6">
+        <div className="flex items-center gap-4">
+          <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-inner ${isRain ? 'bg-gradient-to-br from-blue-400 to-blue-600 text-white' : isCloudy ? 'bg-gradient-to-br from-gray-300 to-gray-500 text-white' : 'bg-gradient-to-br from-amber-400 to-orange-500 text-white'}`}>
+            <WeatherIcon className="w-7 h-7" />
+          </div>
+          <div>
+            <div className="text-3xl font-black text-gray-900 dark:text-white leading-none mb-1 tracking-tight">
+              {Math.round(weather.temperature_2m)}°<span className="text-xl text-gray-400 font-bold">C</span>
+            </div>
+            <div className="text-xs font-bold text-gray-500 tracking-wider uppercase">
+              Phnom Penh · {isRain ? 'Rainy' : isCloudy ? 'Cloudy' : 'Clear'}
+            </div>
+          </div>
+        </div>
+        <div className="flex flex-col justify-center gap-2 border-l border-gray-100 dark:border-gray-800 pl-5 min-h-[48px]">
+          <div className="flex items-center gap-2.5 text-xs font-semibold text-gray-600 dark:text-gray-400">
+            <Wind className="w-4 h-4 text-blue-400" />
+            {weather.wind_speed_10m} km/h
+          </div>
+          <div className="flex items-center gap-2.5 text-xs font-semibold text-gray-600 dark:text-gray-400">
+            <CloudRain className="w-4 h-4 text-teal-400" />
+            {weather.relative_humidity_2m}% Humidity
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -2138,7 +2162,7 @@ function AdminDashboard({ orderHistory, onUpdateOrderStatus, onUpdateOrderPaymen
 
   return (
     <div className="bg-gray-50 dark:bg-gray-950 min-h-screen py-8 md:py-12">
-      <div className="max-w-7xl mx-auto px-4">
+      <div className="w-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-3">
@@ -2147,7 +2171,7 @@ function AdminDashboard({ orderHistory, onUpdateOrderStatus, onUpdateOrderPaymen
             </div>
             <div>
               <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t('adminDashboard')}</h1>
-              <p className="text-gray-500 text-sm">Manage orders, products & customers</p>
+              <p className="text-gray-500 text-sm">{t('manageOrdersDesc')}</p>
             </div>
           </div>
           <AdminWeatherWidget />
@@ -2171,7 +2195,7 @@ function AdminDashboard({ orderHistory, onUpdateOrderStatus, onUpdateOrderPaymen
 
         {/* Tabs */}
         <div className="flex gap-2 mb-6 overflow-x-auto">
-          {[{ id: 'orders', label: 'Orders', icon: Package }, { id: 'payments', label: 'Payments', icon: CreditCard }, { id: 'prescriptions', label: 'Prescriptions', icon: FileText }, { id: 'overview', label: 'Overview', icon: BarChart3 }, { id: 'products', label: 'Products', icon: ShoppingBag }].map(tab => (
+          {[{ id: 'orders', label: t('orders'), icon: Package }, { id: 'payments', label: t('payments'), icon: CreditCard }, { id: 'prescriptions', label: t('prescriptions'), icon: FileText }, { id: 'overview', label: t('overview'), icon: BarChart3 }, { id: 'products', label: t('products'), icon: ShoppingBag }].map(tab => (
             <button key={tab.id} onClick={() => setAdminTab(tab.id)} className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium text-sm transition-all whitespace-nowrap ${adminTab === tab.id ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/25' : 'bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-700'}`}>
               <tab.icon className="w-4 h-4" />{tab.label}
               {tab.id === 'orders' && orderHistory.length > 0 && <span className="ml-1 px-1.5 py-0.5 bg-white/20 rounded-md text-xs">{orderHistory.length}</span>}
@@ -2189,12 +2213,12 @@ function AdminDashboard({ orderHistory, onUpdateOrderStatus, onUpdateOrderPaymen
                 {/* Search */}
                 <div className="relative flex-1">
                   <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                  <input type="text" value={searchOrder} onChange={e => setSearchOrder(e.target.value)} placeholder="Search by order # or email..." className="w-full pl-10 pr-4 py-2.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm dark:text-white" />
+                  <input type="text" value={searchOrder} onChange={e => setSearchOrder(e.target.value)} placeholder={t('searchOrder')} className="w-full pl-10 pr-4 py-2.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm dark:text-white" />
                 </div>
                 {/* Status Filters */}
                 <div className="flex gap-2 overflow-x-auto">
                   <button onClick={() => setStatusFilter('all')} className={`px-3 py-2 rounded-lg text-xs font-semibold transition-all whitespace-nowrap ${statusFilter === 'all' ? 'bg-indigo-500 text-white' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300'}`}>
-                    All ({orderHistory.length})
+                    {t('all')} ({orderHistory.length})
                   </button>
                   {ORDER_STATUSES.map(status => {
                     const count = orderHistory.filter(o => o.status === status).length;
@@ -2213,10 +2237,10 @@ function AdminDashboard({ orderHistory, onUpdateOrderStatus, onUpdateOrderPaymen
               <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 p-10 shadow-sm text-center">
                 <Package className="w-16 h-16 text-gray-200 mx-auto mb-4" />
                 <h3 className="font-bold text-gray-900 dark:text-white text-xl mb-2">
-                  {orderHistory.length === 0 ? 'No Orders Yet' : 'No matching orders'}
+                  {orderHistory.length === 0 ? t('noOrdersAdmin') : 'No matching orders'}
                 </h3>
                 <p className="text-gray-500">
-                  {orderHistory.length === 0 ? 'Orders will appear here when customers make purchases.' : 'Try adjusting your filters or search.'}
+                  {orderHistory.length === 0 ? t('noOrdersAdminDesc') : 'Try adjusting your filters or search.'}
                 </p>
               </div>
             ) : filteredOrders.map(o => {
@@ -2257,7 +2281,7 @@ function AdminDashboard({ orderHistory, onUpdateOrderStatus, onUpdateOrderPaymen
                     <div className="border-t border-gray-100 dark:border-gray-800">
                       {/* Order Items */}
                       <div className="p-5">
-                        <h4 className="font-semibold text-gray-900 dark:text-white text-sm mb-3">Order Items</h4>
+                        <h4 className="font-semibold text-gray-900 dark:text-white text-sm mb-3">{t('orderItems')}</h4>
                         <div className="space-y-3">
                           {(o.items || []).map((item, idx) => (
                             <div key={idx} className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-xl">
@@ -2276,11 +2300,11 @@ function AdminDashboard({ orderHistory, onUpdateOrderStatus, onUpdateOrderPaymen
                       <div className="px-5 pb-3">
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                           <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-3">
-                            <p className="text-xs text-gray-500 mb-0.5">Payment Method</p>
+                            <p className="text-xs text-gray-500 mb-0.5">{t('paymentMethod')}</p>
                             <p className="font-semibold text-gray-900 dark:text-white text-sm">{o.paymentMethod || 'N/A'}</p>
                           </div>
                           <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-3">
-                            <p className="text-xs text-gray-500 mb-0.5">Payment Status</p>
+                            <p className="text-xs text-gray-500 mb-0.5">{t('paymentStatus')}</p>
                             <p className="font-semibold text-gray-900 dark:text-white text-sm">
                               {o.paymentStatus === 'Verified' ? (
                                 <span className="text-green-600 flex items-center gap-1"><CheckCircle className="w-3 h-3"/> Verified</span>
@@ -2290,11 +2314,11 @@ function AdminDashboard({ orderHistory, onUpdateOrderStatus, onUpdateOrderPaymen
                             </p>
                           </div>
                           <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-3">
-                            <p className="text-xs text-gray-500 mb-0.5">Customer</p>
+                            <p className="text-xs text-gray-500 mb-0.5">{t('customer')}</p>
                             <p className="font-semibold text-gray-900 dark:text-white text-sm truncate">{o.userEmail || 'Guest'}</p>
                           </div>
                           <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-3">
-                            <p className="text-xs text-gray-500 mb-0.5">Date</p>
+                            <p className="text-xs text-gray-500 mb-0.5">{t('date')}</p>
                             <p className="font-semibold text-gray-900 dark:text-white text-sm">{o.date}</p>
                           </div>
                         </div>
@@ -2304,15 +2328,15 @@ function AdminDashboard({ orderHistory, onUpdateOrderStatus, onUpdateOrderPaymen
                       {o.paymentProof && (
                         <div className="px-5 pb-3">
                           <div className="flex items-center justify-between mb-3">
-                            <h4 className="font-semibold text-gray-900 dark:text-white text-sm">Payment Receipt</h4>
+                            <h4 className="font-semibold text-gray-900 dark:text-white text-sm">{t('paymentReceipt')}</h4>
                             <button onClick={(e) => { e.stopPropagation(); if (confirm('Are you sure you want to remove this receipt?')) onRemovePaymentProof(o.id); }} className="text-red-500 hover:text-red-600 text-xs font-semibold flex items-center gap-1 bg-red-50 hover:bg-red-100 px-2 py-1 rounded-lg transition-all dark:bg-red-900/20 dark:hover:bg-red-900/40">
-                              <Trash2 className="w-3.5 h-3.5" /> Remove Receipt
+                              <Trash2 className="w-3.5 h-3.5" /> {t('removeReceipt')}
                             </button>
                           </div>
                           <a href={o.paymentProof} target="_blank" rel="noopener noreferrer" className="inline-block border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden shadow-sm hover:shadow relative group w-48 h-32">
                             <img src={o.paymentProof} alt="Receipt" className="w-full h-full object-cover" />
                             <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-xs font-semibold">
-                              View Full Size
+                              {t('viewFullSize')}
                             </div>
                           </a>
                         </div>
@@ -2320,7 +2344,7 @@ function AdminDashboard({ orderHistory, onUpdateOrderStatus, onUpdateOrderPaymen
 
                       {/* Status Progress */}
                       <div className="px-5 pb-3">
-                        <h4 className="font-semibold text-gray-900 dark:text-white text-sm mb-3">Order Progress</h4>
+                        <h4 className="font-semibold text-gray-900 dark:text-white text-sm mb-3">{t('orderProgress')}</h4>
                         <div className="flex items-center gap-1">
                           {['Confirmed', 'Processing', 'Shipped', 'Delivered'].map((status, idx) => {
                             const StatusStepIcon = statusIcons[status];
@@ -2346,22 +2370,22 @@ function AdminDashboard({ orderHistory, onUpdateOrderStatus, onUpdateOrderPaymen
                         <div className="flex flex-wrap gap-2">
                           {canAdvance && (
                             <button onClick={(e) => { e.stopPropagation(); onUpdateOrderStatus(o.id, nextStatus[o.status]); }} className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-xl font-semibold text-sm hover:shadow-lg hover:shadow-indigo-500/25 transition-all">
-                              <ArrowRight className="w-4 h-4" />Move to {nextStatus[o.status]}
+                              <ArrowRight className="w-4 h-4" />{t('moveTo')}{nextStatus[o.status]}
                             </button>
                           )}
                           {o.status !== 'Delivered' && o.status !== 'Cancelled' && (
                             <button onClick={(e) => { e.stopPropagation(); onUpdateOrderStatus(o.id, 'Delivered'); }} className="flex items-center gap-2 px-4 py-2.5 bg-green-50 text-green-700 border border-green-200 rounded-xl font-semibold text-sm hover:bg-green-100 transition-all dark:bg-green-900/20 dark:text-green-400 dark:border-green-800">
-                              <BadgeCheck className="w-4 h-4" />Mark Delivered
+                              <BadgeCheck className="w-4 h-4" />{t('markDelivered')}
                             </button>
                           )}
                           {o.status !== 'Cancelled' && o.status !== 'Delivered' && (
                             <button onClick={(e) => { e.stopPropagation(); if (confirm('Are you sure you want to cancel this order?')) onUpdateOrderStatus(o.id, 'Cancelled'); }} className="flex items-center gap-2 px-4 py-2.5 bg-red-50 text-red-600 border border-red-200 rounded-xl font-semibold text-sm hover:bg-red-100 transition-all dark:bg-red-900/20 dark:text-red-400 dark:border-red-800">
-                              <X className="w-4 h-4" />Cancel Order
+                              <X className="w-4 h-4" />{t('cancelOrder')}
                             </button>
                           )}
                           {o.status === 'Cancelled' && (
                             <button onClick={(e) => { e.stopPropagation(); onUpdateOrderStatus(o.id, 'Confirmed'); }} className="flex items-center gap-2 px-4 py-2.5 bg-blue-50 text-blue-700 border border-blue-200 rounded-xl font-semibold text-sm hover:bg-blue-100 transition-all">
-                              <RefreshCw className="w-4 h-4" />Restore Order
+                              <RefreshCw className="w-4 h-4" />{t('restoreOrder')}
                             </button>
                           )}
                         </div>
@@ -2378,14 +2402,14 @@ function AdminDashboard({ orderHistory, onUpdateOrderStatus, onUpdateOrderPaymen
         {adminTab === 'payments' && (
           <div className="space-y-4">
             <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 p-6 shadow-sm mb-6">
-              <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-2">Payment Verification</h2>
-              <p className="text-sm text-gray-500">Review and verify payment receipts uploaded by customers for KHQR and ABA PayWay transactions.</p>
+              <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-2">{t('paymentVerification')}</h2>
+              <p className="text-sm text-gray-500">{t('paymentVerificationDesc')}</p>
             </div>
             
             {orderHistory.filter(o => o.paymentMethod !== 'Cash on Delivery').length === 0 ? (
               <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 p-10 shadow-sm text-center">
                 <CreditCard className="w-16 h-16 text-gray-200 mx-auto mb-4" />
-                <h3 className="font-bold text-gray-900 dark:text-white text-xl mb-2">No Payments to Verify</h3>
+                <h3 className="font-bold text-gray-900 dark:text-white text-xl mb-2">{t('noPaymentsToVerify')}</h3>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -2404,28 +2428,28 @@ function AdminDashboard({ orderHistory, onUpdateOrderStatus, onUpdateOrderPaymen
                     
                     <div className="p-4 flex-1 flex flex-col">
                       <div className="mb-4">
-                        <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">Payment Status</span>
+                        <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">{t('paymentStatus')}</span>
                         {o.paymentStatus === 'Verified' ? (
                           <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-green-50 text-green-700 border border-green-200 rounded-lg text-sm font-semibold">
-                            <CheckCircle className="w-4 h-4" /> Verified
+                            <CheckCircle className="w-4 h-4" /> {t('verified')}
                           </div>
                         ) : o.paymentStatus === 'Rejected' ? (
                           <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-red-50 text-red-700 border border-red-200 rounded-lg text-sm font-semibold">
-                            <X className="w-4 h-4" /> Rejected
+                            <X className="w-4 h-4" /> {t('rejected')}
                           </div>
                         ) : (
                           <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-50 text-amber-700 border border-amber-200 rounded-lg text-sm font-semibold">
-                            <Clock className="w-4 h-4" /> Pending Review
+                            <Clock className="w-4 h-4" /> {t('pendingReview')}
                           </div>
                         )}
                       </div>
                       
                       <div className="flex-1 mb-4 flex flex-col justify-center">
                         <div className="flex items-center justify-between mb-2">
-                          <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider block mb-0">Receipt Image</span>
+                          <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider block mb-0">{t('receiptImage')}</span>
                           {o.paymentProof && (
                             <button onClick={(e) => { e.stopPropagation(); if (confirm('Are you sure you want to remove this receipt?')) onRemovePaymentProof(o.id); }} className="text-red-500 hover:text-red-600 text-xs font-semibold flex items-center gap-1 bg-red-50 hover:bg-red-100 px-2 py-1 rounded-lg transition-all dark:bg-red-900/20 dark:hover:bg-red-900/40">
-                              <Trash2 className="w-3.5 h-3.5" /> Remove
+                              <Trash2 className="w-3.5 h-3.5" /> {t('remove')}
                             </button>
                           )}
                         </div>
@@ -2433,12 +2457,12 @@ function AdminDashboard({ orderHistory, onUpdateOrderStatus, onUpdateOrderPaymen
                           <a href={o.paymentProof} target="_blank" rel="noopener noreferrer" className="block w-full border border-gray-200 rounded-xl overflow-hidden shadow-sm hover:shadow relative group">
                             <img src={o.paymentProof} alt="Receipt" className="w-full h-40 object-cover" />
                             <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-xs font-semibold bg-gray-900/50">
-                              View Full Size
+                              {t('viewFullSize')}
                             </div>
                           </a>
                         ) : (
                           <div className="w-full h-40 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl flex items-center justify-center text-gray-400 text-sm">
-                            No Receipt Uploaded
+                            {t('noReceiptUploaded')}
                           </div>
                         )}
                       </div>
@@ -2446,17 +2470,17 @@ function AdminDashboard({ orderHistory, onUpdateOrderStatus, onUpdateOrderPaymen
                       {o.paymentStatus !== 'Verified' && (
                         <div className="grid grid-cols-2 gap-2 mt-auto">
                           <button onClick={() => onUpdateOrderPaymentStatus(o.id, 'Verified')} className="flex items-center justify-center gap-1.5 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-xl font-semibold text-sm transition-all shadow-sm">
-                            <CheckCircle className="w-4 h-4" /> Verify
+                            <CheckCircle className="w-4 h-4" /> {t('verify')}
                           </button>
                           <button onClick={() => onUpdateOrderPaymentStatus(o.id, 'Rejected')} className="flex items-center justify-center gap-1.5 py-2.5 bg-white border-2 border-red-200 text-red-600 hover:bg-red-50 rounded-xl font-semibold text-sm transition-all shadow-sm">
-                            <X className="w-4 h-4" /> Reject
+                            <X className="w-4 h-4" /> {t('reject')}
                           </button>
                         </div>
                       )}
                       {o.paymentStatus === 'Verified' && (
                         <div className="grid grid-cols-1 mt-auto">
                           <button onClick={() => onUpdateOrderPaymentStatus(o.id, 'Pending')} className="flex items-center justify-center gap-1.5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-semibold text-sm transition-all shadow-sm">
-                            <RefreshCw className="w-4 h-4" /> Reset Status
+                            <RefreshCw className="w-4 h-4" /> {t('resetStatus')}
                           </button>
                         </div>
                       )}
@@ -2473,7 +2497,7 @@ function AdminDashboard({ orderHistory, onUpdateOrderStatus, onUpdateOrderPaymen
           <div className="space-y-6">
             {/* Sales by Category */}
             <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 p-6 shadow-sm">
-              <h3 className="font-bold text-gray-900 dark:text-white mb-4">Sales Overview</h3>
+              <h3 className="font-bold text-gray-900 dark:text-white mb-4">{t('salesOverview')}</h3>
               <div className="space-y-4">
                 {['Vitamins & Supplements', 'Cold & Flu', 'Pain Relief', 'Skincare', 'Diabetes Care'].map((cat, i) => {
                   const width = [85, 65, 72, 58, 45][i];
@@ -2493,7 +2517,7 @@ function AdminDashboard({ orderHistory, onUpdateOrderStatus, onUpdateOrderPaymen
             </div>
             {/* Order Status Summary */}
             <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 p-6 shadow-sm">
-              <h3 className="font-bold text-gray-900 dark:text-white mb-4">Order Status Breakdown</h3>
+              <h3 className="font-bold text-gray-900 dark:text-white mb-4">{t('orderStatusBreakdown')}</h3>
               <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
                 {ORDER_STATUSES.map(status => {
                   const count = orderHistory.filter(o => o.status === status).length;
@@ -2510,9 +2534,9 @@ function AdminDashboard({ orderHistory, onUpdateOrderStatus, onUpdateOrderPaymen
             </div>
             {/* Recent Activity */}
             <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 p-6 shadow-sm">
-              <h3 className="font-bold text-gray-900 dark:text-white mb-4">Recent Orders</h3>
+              <h3 className="font-bold text-gray-900 dark:text-white mb-4">{t('recentOrders')}</h3>
               {orderHistory.length === 0 ? (
-                <p className="text-gray-500 text-sm text-center py-4">No orders yet</p>
+                <p className="text-gray-500 text-sm text-center py-4">{t('noOrdersAdmin')}</p>
               ) : (
                 <div className="space-y-3">
                   {orderHistory.slice(0, 5).map(o => (
@@ -2542,20 +2566,20 @@ function AdminDashboard({ orderHistory, onUpdateOrderStatus, onUpdateOrderPaymen
         {adminTab === 'products' && (
           <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm overflow-hidden">
             <div className="p-6 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center bg-gray-50/50 dark:bg-gray-800/50">
-              <h3 className="font-bold text-gray-900 dark:text-white text-lg">Manage Products</h3>
+              <h3 className="font-bold text-gray-900 dark:text-white text-lg">{t('manageProducts')}</h3>
               <button onClick={() => handleProductModal()} className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-teal-500 to-emerald-500 text-white rounded-xl font-bold text-sm hover:shadow-lg transition-all">
-                <Plus className="w-4 h-4" />Add Product
+                <Plus className="w-4 h-4" />{t('addProduct')}
               </button>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead className="bg-gray-50 dark:bg-gray-800">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Product</th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Category</th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Price</th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Stock</th>
-                    <th className="px-6 py-3 text-right text-xs font-semibold text-gray-500 uppercase">Actions</th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">{t('productTab')}</th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">{t('category')}</th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">{t('price')}</th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">{t('stock')}</th>
+                    <th className="px-6 py-3 text-right text-xs font-semibold text-gray-500 uppercase">{t('actions')}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
@@ -2572,7 +2596,7 @@ function AdminDashboard({ orderHistory, onUpdateOrderStatus, onUpdateOrderPaymen
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-300 capitalize">{p.category}</td>
                       <td className="px-6 py-4 text-sm font-bold text-gray-900 dark:text-white">${parseFloat(p.price).toFixed(2)}</td>
-                      <td className="px-6 py-4"><span className={`px-2.5 py-1 text-xs font-semibold rounded-lg ${p.inStock ? 'bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400'}`}>{p.inStock ? 'In Stock' : 'Out'}</span></td>
+                      <td className="px-6 py-4"><span className={`px-2.5 py-1 text-xs font-semibold rounded-lg ${p.inStock ? 'bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400'}`}>{p.inStock ? t('inStock') : t('outOfStock')}</span></td>
                       <td className="px-6 py-4 text-right">
                         <div className="flex items-center justify-end gap-2">
                           <button onClick={() => handleProductModal(p)} className="p-2 text-gray-400 hover:text-blue-500 bg-white dark:bg-gray-800 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg border border-gray-200 dark:border-gray-700 transition-all"><Edit className="w-4 h-4" /></button>
@@ -2595,15 +2619,15 @@ function AdminDashboard({ orderHistory, onUpdateOrderStatus, onUpdateOrderPaymen
           <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
             <div className="bg-white dark:bg-gray-900 rounded-2xl w-full max-w-xl max-h-[90vh] overflow-y-auto shadow-2xl p-6">
               <div className="flex justify-between items-center mb-6">
-                <h3 className="text-xl font-bold text-gray-900 dark:text-white">{editingProduct ? 'Edit Product' : 'Add New Product'}</h3>
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white">{editingProduct ? t('editProduct') : t('addNewProduct')}</h3>
                 <button onClick={() => setShowProductModal(false)} className="p-2 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors"><X className="w-5 h-5" /></button>
               </div>
               <div className="space-y-4">
-                <div><label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Product Name</label><input type="text" value={formData.name} onChange={e=>setFormData({...formData, name: e.target.value})} className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-800 dark:text-white" /></div>
+                <div><label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">{t('productName')}</label><input type="text" value={formData.name} onChange={e=>setFormData({...formData, name: e.target.value})} className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-800 dark:text-white" /></div>
                 <div className="grid grid-cols-2 gap-4">
-                  <div><label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Brand</label><input type="text" value={formData.brand} onChange={e=>setFormData({...formData, brand: e.target.value})} className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-800 dark:text-white" /></div>
+                  <div><label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">{t('brand')}</label><input type="text" value={formData.brand} onChange={e=>setFormData({...formData, brand: e.target.value})} className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-800 dark:text-white" /></div>
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Category</label>
+                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">{t('category')}</label>
                     <select value={formData.category} onChange={e=>setFormData({...formData, category: e.target.value})} className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-800 dark:text-white">
                       {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                     </select>
@@ -2611,14 +2635,14 @@ function AdminDashboard({ orderHistory, onUpdateOrderStatus, onUpdateOrderPaymen
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Price ($)</label>
+                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">{t('price')} ($)</label>
                     <input type="number" step="0.01" value={formData.price} onChange={e=>setFormData({...formData, price: e.target.value})} className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-800 dark:text-white" />
                     
-                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5 mt-4">Image or Image URL</label>
+                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5 mt-4">{t('imageOrUrl')}</label>
                     <div className="flex flex-col gap-2">
                       <input type="text" value={formData.image} onChange={e=>setFormData({...formData, image: e.target.value})} className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-800 dark:text-white text-xs" placeholder="https://..." />
                       <label className="relative cursor-pointer bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors text-gray-700 dark:text-gray-300 text-sm font-medium py-2 rounded-xl text-center">
-                        <span><Upload className="w-4 h-4 inline mr-2" />Upload Image</span>
+                        <span><Upload className="w-4 h-4 inline mr-2" />{t('uploadImage')}</span>
                         <input type="file" accept="image/*" className="hidden" onChange={(e) => {
                           const file = e.target.files[0];
                           if (file) {
@@ -2631,7 +2655,7 @@ function AdminDashboard({ orderHistory, onUpdateOrderStatus, onUpdateOrderPaymen
                     </div>
                   </div>
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Image Preview</label>
+                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">{t('imagePreview')}</label>
                     <div className="w-full h-40 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl flex items-center justify-center bg-gray-50 dark:bg-gray-800/50 overflow-hidden">
                       {formData.image ? (
                         <img src={formData.image} alt="Preview" className="w-full h-full object-contain" />
@@ -2643,16 +2667,16 @@ function AdminDashboard({ orderHistory, onUpdateOrderStatus, onUpdateOrderPaymen
                 </div>
                 <div className="flex items-center gap-3 py-2">
                   <input type="checkbox" id="stock" checked={formData.inStock} onChange={e=>setFormData({...formData, inStock: e.target.checked})} className="w-5 h-5 rounded text-teal-500 focus:ring-teal-500" />
-                  <label htmlFor="stock" className="font-medium text-gray-700 dark:text-gray-300 cursor-pointer">In Stock</label>
+                  <label htmlFor="stock" className="font-medium text-gray-700 dark:text-gray-300 cursor-pointer">{t('inStock')}</label>
                   
                   <input type="checkbox" id="prescription" checked={formData.prescriptionRequired} onChange={e=>setFormData({...formData, prescriptionRequired: e.target.checked})} className="w-5 h-5 rounded text-blue-500 focus:ring-blue-500 ml-6" />
-                  <label htmlFor="prescription" className="font-medium text-gray-700 dark:text-gray-300 cursor-pointer">Prescription Required</label>
+                  <label htmlFor="prescription" className="font-medium text-gray-700 dark:text-gray-300 cursor-pointer">{t('prescriptionRequired')}</label>
                 </div>
-                <div><label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Description</label><textarea value={formData.description} onChange={e=>setFormData({...formData, description: e.target.value})} rows={3} className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-800 dark:text-white resize-none" /></div>
+                <div><label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">{t('description')}</label><textarea value={formData.description} onChange={e=>setFormData({...formData, description: e.target.value})} rows={3} className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-800 dark:text-white resize-none" /></div>
               </div>
               <div className="mt-8 flex gap-3">
-                <button onClick={() => setShowProductModal(false)} className="flex-1 py-3.5 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-xl font-bold hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">Cancel</button>
-                <button onClick={saveProduct} className="flex-1 py-3.5 bg-gradient-to-r from-teal-500 to-emerald-500 text-white rounded-xl font-bold hover:shadow-lg transition-all">Save Product</button>
+                <button onClick={() => setShowProductModal(false)} className="flex-1 py-3.5 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-xl font-bold hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">{t('cancel')}</button>
+                <button onClick={saveProduct} className="flex-1 py-3.5 bg-gradient-to-r from-teal-500 to-emerald-500 text-white rounded-xl font-bold hover:shadow-lg transition-all">{t('saveProduct')}</button>
               </div>
             </div>
           </div>
@@ -2664,8 +2688,8 @@ function AdminDashboard({ orderHistory, onUpdateOrderStatus, onUpdateOrderPaymen
             {prescriptions.length === 0 ? (
               <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 p-10 shadow-sm text-center">
                 <FileText className="w-16 h-16 text-gray-200 mx-auto mb-4" />
-                <h3 className="font-bold text-gray-900 dark:text-white text-xl mb-2">No Prescriptions Yet</h3>
-                <p className="text-gray-500">Prescriptions will appear here when customers upload them.</p>
+                <h3 className="font-bold text-gray-900 dark:text-white text-xl mb-2">{t('noPrescriptionsYet')}</h3>
+                <p className="text-gray-500">{t('noPrescriptionsDesc')}</p>
               </div>
             ) : prescriptions.map(rx => {
               const isExpanded = expandedRx === rx.id;
@@ -2710,25 +2734,25 @@ function AdminDashboard({ orderHistory, onUpdateOrderStatus, onUpdateOrderPaymen
                       <div className="p-5">
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
                           <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-3">
-                            <p className="text-xs text-gray-500 mb-0.5">Patient</p>
+                            <p className="text-xs text-gray-500 mb-0.5">{t('patient')}</p>
                             <p className="font-semibold text-gray-900 dark:text-white text-sm">{rx.patientName}</p>
                           </div>
                           <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-3">
-                            <p className="text-xs text-gray-500 mb-0.5">Phone</p>
+                            <p className="text-xs text-gray-500 mb-0.5">{t('phone')}</p>
                             <p className="font-semibold text-gray-900 dark:text-white text-sm">{rx.phone || 'N/A'}</p>
                           </div>
                           <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-3">
-                            <p className="text-xs text-gray-500 mb-0.5">Address</p>
+                            <p className="text-xs text-gray-500 mb-0.5">{t('address')}</p>
                             <p className="font-semibold text-gray-900 dark:text-white text-sm truncate">{rx.address || 'N/A'}</p>
                           </div>
                           <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-3">
-                            <p className="text-xs text-gray-500 mb-0.5">Email</p>
+                            <p className="text-xs text-gray-500 mb-0.5">{t('email')}</p>
                             <p className="font-semibold text-gray-900 dark:text-white text-sm truncate">{rx.userEmail || 'Guest'}</p>
                           </div>
                         </div>
                         {rx.notes && (
                           <div className="bg-amber-50 dark:bg-amber-900/20 rounded-xl p-3 mb-4 border border-amber-100 dark:border-amber-800">
-                            <p className="text-xs text-amber-600 dark:text-amber-400 font-semibold mb-1">Patient Notes</p>
+                            <p className="text-xs text-amber-600 dark:text-amber-400 font-semibold mb-1">{t('patientNotes')}</p>
                             <p className="text-sm text-amber-800 dark:text-amber-300">{rx.notes}</p>
                           </div>
                         )}
@@ -2736,7 +2760,7 @@ function AdminDashboard({ orderHistory, onUpdateOrderStatus, onUpdateOrderPaymen
 
                       {/* Prescription Images */}
                       <div className="px-5 pb-4">
-                        <h4 className="font-semibold text-gray-900 dark:text-white text-sm mb-3">Prescription Files</h4>
+                        <h4 className="font-semibold text-gray-900 dark:text-white text-sm mb-3">{t('prescriptionFiles')}</h4>
                         <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                           {(rx.fileData || []).map((file, idx) => (
                             <div key={idx} className="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
@@ -2745,7 +2769,7 @@ function AdminDashboard({ orderHistory, onUpdateOrderStatus, onUpdateOrderPaymen
                               ) : (
                                 <div className="w-full h-40 bg-gray-50 dark:bg-gray-800 flex flex-col items-center justify-center">
                                   <FileText className="w-10 h-10 text-gray-400 mb-2" />
-                                  <p className="text-xs text-gray-500">PDF Document</p>
+                                  <p className="text-xs text-gray-500">{t('pdfDocument')}</p>
                                 </div>
                               )}
                               <div className="p-2 bg-gray-50 dark:bg-gray-800">
@@ -2767,22 +2791,22 @@ function AdminDashboard({ orderHistory, onUpdateOrderStatus, onUpdateOrderPaymen
                         <div className="flex flex-wrap gap-2">
                           {rx.status === 'Pending' && (
                             <button onClick={(e) => { e.stopPropagation(); onUpdatePrescriptionStatus(rx.id, 'Reviewing'); }} className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-xl font-semibold text-sm hover:shadow-lg transition-all">
-                              <Eye className="w-4 h-4" />Start Review
+                              <Eye className="w-4 h-4" />{t('startReview')}
                             </button>
                           )}
                           {(rx.status === 'Pending' || rx.status === 'Reviewing') && (
                             <>
                               <button onClick={(e) => { e.stopPropagation(); onUpdatePrescriptionStatus(rx.id, 'Approved'); }} className="flex items-center gap-2 px-4 py-2.5 bg-green-50 text-green-700 border border-green-200 rounded-xl font-semibold text-sm hover:bg-green-100 transition-all dark:bg-green-900/20 dark:text-green-400 dark:border-green-800">
-                                <CheckCircle className="w-4 h-4" />Approve
+                                <CheckCircle className="w-4 h-4" />{t('approve')}
                               </button>
                               <button onClick={(e) => { e.stopPropagation(); onUpdatePrescriptionStatus(rx.id, 'Rejected'); }} className="flex items-center gap-2 px-4 py-2.5 bg-red-50 text-red-600 border border-red-200 rounded-xl font-semibold text-sm hover:bg-red-100 transition-all dark:bg-red-900/20 dark:text-red-400 dark:border-red-800">
-                                <X className="w-4 h-4" />Reject
+                                <X className="w-4 h-4" />{t('reject')}
                               </button>
                             </>
                           )}
                           {(rx.status === 'Approved' || rx.status === 'Rejected') && (
                             <button onClick={(e) => { e.stopPropagation(); onUpdatePrescriptionStatus(rx.id, 'Pending'); }} className="flex items-center gap-2 px-4 py-2.5 bg-gray-50 text-gray-700 border border-gray-200 rounded-xl font-semibold text-sm hover:bg-gray-100 transition-all">
-                              <RefreshCw className="w-4 h-4" />Reset to Pending
+                              <RefreshCw className="w-4 h-4" />{t('resetToPending')}
                             </button>
                           )}
                         </div>
