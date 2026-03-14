@@ -16,7 +16,7 @@ import {
   Gift, Percent, Tag, Copy, ArrowRight, Sparkles,
   HeartHandshake, BookOpen, Stethoscope, Award, Info,
   LogOut, Eye, EyeOff, UserPlus, BarChart3, TrendingUp,
-  Trash2, Edit, ShieldCheck, LayoutDashboard
+  Trash2, Edit, ShieldCheck, LayoutDashboard, CloudRain, Cloud
 } from 'lucide-react';
 import * as AccordionPrimitive from '@radix-ui/react-accordion';
 import * as TabsPrimitive from '@radix-ui/react-tabs';
@@ -2036,6 +2036,38 @@ function WishlistPage({ wishlist, toggleWishlist, navigate, onAddToCart }) {
   );
 }
 
+// ============ ADMIN WEATHER WIDGET ============
+function AdminWeatherWidget() {
+  const [weather, setWeather] = useState(null);
+  
+  useEffect(() => {
+    // Phnom Penh coords
+    fetch('https://api.open-meteo.com/v1/forecast?latitude=11.5564&longitude=104.9282&current=temperature_2m,weather_code&timezone=auto')
+      .then(res => res.json())
+      .then(data => {
+        if(data && data.current) setWeather(data.current);
+      }).catch(err => console.error("Weather fetch failed:", err));
+  }, []);
+
+  if (!weather) return null;
+
+  const isRain = weather.weather_code >= 51 && weather.weather_code <= 67 || weather.weather_code >= 80 && weather.weather_code <= 82 || weather.weather_code >= 95;
+  const isCloudy = weather.weather_code >= 1 && weather.weather_code <= 3 || weather.weather_code >= 45 && weather.weather_code <= 48;
+  const WeatherIcon = isRain ? CloudRain : isCloudy ? Cloud : Sun;
+  
+  return (
+    <div className="hidden sm:flex items-center gap-3 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl p-3 shadow-sm hover:shadow-md transition-all cursor-default min-w-[130px]">
+      <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${isRain ? 'bg-blue-50 text-blue-500 dark:bg-blue-900/30 dark:text-blue-400' : isCloudy ? 'bg-gray-50 text-gray-500 dark:bg-gray-800 dark:text-gray-400' : 'bg-amber-50 text-amber-500 dark:bg-amber-900/30 dark:text-amber-400'}`}>
+        <WeatherIcon className="w-5 h-5" />
+      </div>
+      <div>
+        <div className="text-sm font-bold text-gray-900 dark:text-white">{Math.round(weather.temperature_2m)}°C</div>
+        <div className="text-xs text-gray-500">{isRain ? 'Rainy' : isCloudy ? 'Cloudy' : 'Clear'}</div>
+      </div>
+    </div>
+  );
+}
+
 // ============ ADMIN DASHBOARD ============
 function AdminDashboard({ orderHistory, onUpdateOrderStatus, onUpdateOrderPaymentStatus, onRemovePaymentProof, prescriptions = [], onUpdatePrescriptionStatus }) {
   const { products, addProduct, updateProduct, deleteProduct } = useProducts();
@@ -2118,6 +2150,7 @@ function AdminDashboard({ orderHistory, onUpdateOrderStatus, onUpdateOrderPaymen
               <p className="text-gray-500 text-sm">Manage orders, products & customers</p>
             </div>
           </div>
+          <AdminWeatherWidget />
         </div>
 
         {/* Stats Grid */}
